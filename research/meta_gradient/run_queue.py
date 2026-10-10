@@ -61,6 +61,7 @@ IDENTITY_FILE = 'identity.json'
 EXIT_RUNS_FAILED = 1
 EXIT_CONFLICT = 2
 EXIT_SYNC_FAILED = 3
+EXIT_MISSING_DATA = 4
 
 
 @dataclasses.dataclass(frozen=True)
@@ -121,6 +122,12 @@ def _data_paths(flags: Sequence[str]) -> dict[str, str]:
         if flag in paths:
             paths[flag] = flags[i + 1]
     return {flag: p if os.path.isabs(p) else os.path.join(REPO_DIR, p) for flag, p in paths.items()}
+
+
+def missing_data(specs: Sequence['RunSpec']) -> list[str]:
+    """Returns the data files that the planned runs read but that do not exist, sorted."""
+    paths = {path for spec in specs for path in _data_paths(spec.flags).values()}
+    return sorted(_portable(path) for path in paths if not os.path.isfile(path))
 
 
 @dataclasses.dataclass
@@ -691,6 +698,10 @@ def main() -> None:
             subprocess.run(['sudo', 'shutdown', '-h', 'now'])
         sys.exit(exit_code)
 
+    missing = missing_data(specs)
+    if missing:
+        print(f'[queue] missing data: {", ".join(missing)}', flush=True)
+        finish(EXIT_MISSING_DATA, {'error': 'missing data', 'missing': missing}, mirror=False)
     if args.sync and not check_sync(args.sync, queue_dir):
         finish(EXIT_SYNC_FAILED, {'error': f'cannot write to {args.sync}'}, mirror=False)
     write_manifest(os.path.join(queue_dir, f'manifest_{args.track}_{stamp}.json'), argv=sys.argv,

@@ -88,6 +88,18 @@ class IdentityTest(unittest.TestCase):
         with open(os.path.join(queue_dir, summary)) as f:
             self.assertEqual(json.load(f)['exit_code'], run_queue.EXIT_CONFLICT)
 
+    def test_cli_refuses_to_start_without_the_data(self):
+        os.remove(self.data)
+        argv = ['run_queue.py', '--track', 'tiny', '--arms', 'A1', '--prefix', 't', '--gpus', 'cpu0',
+                '--gpus-per-run', '1', '--launcher', 'env', '--extra', ' '.join(self.flags)]
+        with mock.patch.object(sys, 'argv', argv), contextlib.redirect_stdout(io.StringIO()) as out:
+            with mock.patch.object(run_queue, 'run_queue') as launch:
+                with self.assertRaises(SystemExit) as raised:
+                    run_queue.main()
+        self.assertEqual(raised.exception.code, run_queue.EXIT_MISSING_DATA)
+        launch.assert_not_called()
+        self.assertIn('missing data', out.getvalue())
+
     def test_interrupted_attempts_are_kept_aside(self):
         spec = self._spec()
         os.makedirs(spec.run_dir)

@@ -135,6 +135,15 @@ def _arms_for(track: str) -> list[Arm]:
         arms += [
             arm('eqr', 'C', 'MuonEq-R row normalization (absent from the tiny record).',
                 '--muon-eq-r'),
+            # Follow-ups of C-reg-aug: its regularization, MuonEq-R on top, and the map without MG.
+            arm('C-reg-aug-e0.05', 'C', 'C-reg-aug with eps = 0.05 RMS.',
+                '--spectral', 'augmented_polar', '--spectral-eps', '0.05'),
+            arm('C-reg-aug-e0.2', 'C', 'C-reg-aug with eps = 0.2 RMS.',
+                '--spectral', 'augmented_polar', '--spectral-eps', '0.2'),
+            arm('C-reg-aug-eqr', 'C', 'C-reg-aug after MuonEq-R row normalization.',
+                '--spectral', 'augmented_polar', '--spectral-eps', '0.1', '--muon-eq-r'),
+            arm('C-reg-aug-nomg', 'C', 'C-reg-aug without the MG step (pairs with nomg-same).',
+                '--spectral', 'augmented_polar', '--spectral-eps', '0.1', '--mg-every', '0'),
             # Priority D: recurrent credit. Without MG the compensated estimator is an unbiased
             # raw gradient at fixed weights (compare with nomg); with MG the draw also moves the
             # adaptation point, so the MG arms are D x MG interaction experiments (compare with base).
@@ -184,6 +193,8 @@ STUDIES: dict[str, tuple[str, tuple[str, ...]]] = {
     'tiny-C': ('tiny', ('base', 'C-exact', 'C-reg', 'C-reg-aug', 'C-inv', 'C-2phase', 'eqr',
                         'nomg-same', 'mona', 'mona-mg')),
     'tiny-C-lr': ('tiny', ('base-lr0.8', 'base-lr1.25', 'C-inv-lr0.8', 'C-inv-lr1.25')),
+    'tiny-C-reg-aug': ('tiny', ('C-reg-aug-e0.05', 'C-reg-aug-e0.2', 'C-reg-aug-eqr', 'nomg-same',
+                                'C-reg-aug-nomg')),
     'tiny-D': ('tiny', ('nomg', 'D-full-nomg', 'D-r25-nomg', 'D-r25c-nomg', 'D-r50c-nomg')),
     'tiny-DxMG': ('tiny', ('base', 'D-full', 'D-r25', 'D-r25c', 'D-r50c')),
     'tiny-E': ('tiny', ('base', 'nomg', 'E-uni', 'E-hash', 'E-gate', 'E-shrink', 'E-shrink-nomg',
